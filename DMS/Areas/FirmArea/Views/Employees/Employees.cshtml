@@ -1,0 +1,16 @@
+﻿@using CoreEntites.SessionManagement;
+@{
+    ViewBag.Title = "Employees";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<main class="col-sm-9 ml-sm-auto col-md-10 pt-3">
+    <div class="main_section" id="dvPartial">
+        <a href="@Url.Action("AddEditEmployee","Employees",new { area="FirmArea"})">Add Employee</a>
+        <div>
+            <table id="jqlist" class="table table-striped supplier-table"></table>
+            <div id="jqControls"></div>
+        </div>
+    </div>
+</main>
+<script src="~/Scripts/jquery.jqGrid.min.js"></script>
+<script src="~/Areas/FirmArea/Scripts/Employee.js"></script>

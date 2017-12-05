@@ -1,0 +1,151 @@
+﻿@model DMS.Areas.IndividualsArea.Models.IndividualRegistrationViewModel
+
+@{
+    ViewBag.Title = "Register";
+    //Layout = "~/Views/Shared/_Layout.cshtml";
+    Layout = null;
+}
+@Styles.Render("~/Content/css")
+@Scripts.Render("~/bundles/modernizr")
+<body class="white_bg">
+    <section class="login-outer registration_page">
+        <div class="login-sec">
+            
+            <div class="logo-dv"> <a href="#"><img src="~/images/logo.png" alt="" /></a> </div>
+            <div class="alert alert-danger alert-dismissible fade show" id="dvAlertDanger" role="alert" style="display:none">
+                <label id="lblAlertDanger"></label>
+                @*<button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>*@
+            </div>
+            @using (Html.BeginForm("Register", "Account", FormMethod.Post, new { @class = "", role = "form" }))
+            {
+                @Html.AntiForgeryToken()
+                if (!string.IsNullOrEmpty(Convert.ToString(ViewBag.Message)))
+                {
+                    <div class="alert alert-success">
+                        <a href="#" class="close" data-dismiss="alert">&times;</a>
+                        @ViewBag.Message
+                    </div>
+                    <p>
+                        @Html.ActionLink("Click here to login", "Login")
+                    </p>
+                }
+                else
+                {
+
+                }
+                <div class="" id="dvRegister">
+                    @Html.ValidationSummary(true, "", new { @class = "text-danger" })
+                    <div class="row">
+                        <div class="col-6">
+                            <div class="form-group">
+                                @Html.DropDownList("Prefix", new SelectList(ViewBag.Prefix, "Value", "Text"), new { @class = "form-control" })
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="form-group">
+                                @Html.EditorFor(model => model.FirstName, new { htmlAttributes = new { @class = "form-control", @placeholder = "First Name", @maxlength = "50" } })
+                                @Html.ValidationMessageFor(model => model.FirstName, "", new { @class = "invalid-feedback" })
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-6">
+                            <div class="form-group">
+                                @Html.EditorFor(model => model.MiddleName, new { htmlAttributes = new { @class = "form-control", @placeholder = "Middle Name", @maxlength = "50" } })
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="form-group">
+                                @Html.EditorFor(model => model.LastName, new { htmlAttributes = new { @class = "form-control", @placeholder = "Last Name", @maxlength = "50" } })
+                                @Html.ValidationMessageFor(model => model.LastName, "", new { @class = "invalid-feedback" })
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-6">
+                            <div class="form-group">
+                                @Html.EditorFor(model => model.Suffix, new { htmlAttributes = new { @class = "form-control", @placeholder = "Suffix", @maxlength = "50" } })
+                                @Html.ValidationMessageFor(model => model.Suffix, "", new { @class = "invalid-feedback" })
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="form-group">
+                                @Html.EditorFor(model => model.BirthDate, new { htmlAttributes = new { @class = "form-control", @placeholder = "Date Of Birth" } })
+                                @Html.ValidationMessageFor(model => model.BirthDate, "", new { @class = "invalid-feedback" })
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-6">
+                            <div class="form-group">
+                                @Html.EditorFor(model => model.SSN, new { htmlAttributes = new { @class = "form-control", @placeholder = "SSN", @maxlength = "9", @minlength = "9"} })
+                                @Html.ValidationMessageFor(model => model.SSN, "", new { @class = "invalid-feedback" })
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="form-group">
+                                @Html.EditorFor(model => model.Phone, new { htmlAttributes = new { @class = "form-control", @placeholder = "Phone", @maxlength = "10", @minlength = "10" } })
+                                @Html.ValidationMessageFor(model => model.Phone, "", new { @class = "invalid-feedback" })
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-6">
+                            <div class="form-group">
+                                @Html.EditorFor(model => model.UserName, new { htmlAttributes = new { @class = "form-control", @placeholder = "UserName", @maxlength = "30" } })
+                                @Html.ValidationMessageFor(model => model.UserName, "", new { @class = "invalid-feedback" })
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="form-group">
+                                @Html.EditorFor(model => model.EmailAddress, new { htmlAttributes = new { @class = "form-control", @placeholder = "Email", @maxlength = "100" } })
+                                @Html.ValidationMessageFor(model => model.EmailAddress, "", new { @class = "invalid-feedback" })
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-6">
+                            <div class="form-group">
+                                @Html.PasswordFor(model => model.Password, new { @class = "form-control", @placeholder = "Password", @maxlength = "50" })
+                                @Html.ValidationMessageFor(model => model.Password, "", new { @class = "invalid-feedback" })
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="form-group">
+                                @Html.PasswordFor(m => m.ConfirmPassword, new { @class = "form-control", @placeholder = "Confirm Password", @maxlength = "50" })
+                                @Html.ValidationMessageFor(model => model.ConfirmPassword, "", new { @class = "invalid-feedback" })
+                            </div>
+                        </div>
+                    </div>
+                    <div class="clearfix text-left">
+                        <div class="form-check form-check-inline">
+                            <label class="form-check-label">
+                                @Html.RadioButtonFor(model => model.IsIndividualClient, "1", new { @checked = true, @class = "form-check-input" })Individual User
+                            </label>
+                        </div>
+                        <div class="form-check form-check-inline m_left20">
+                            <label class="form-check-label">@Html.RadioButtonFor(model => model.IsIndividualClient, "0", new { @class = "form-check-input", })Accounting Firm</label>
+                        </div>
+                    </div>
+                    <input type="submit" value="Register" id="btnSubmit" class="btn btn-primary" />
+                    <p>
+                        @Html.ActionLink("Back to login", "Login", new { @class = "" })
+                    </p>
+                </div>
+            }
+        </div>
+    </section>
+</body>
+
+@Scripts.Render("~/bundles/jquery")
+@Scripts.Render("~/bundles/bootstrap")
+@Scripts.Render("~/bundles/jqueryval")
+@*@RenderSection("scripts", required: false)*@
+<input type="hidden" id="hdnMessage" value="@ViewBag.Message" />
+<script src="~/Scripts/jquery-1.12.4.js"></script>
+<script src="~/Areas/IndividualsArea/Scripts/IndividualRegistration.js"></script>
+<script src="~/Scripts/bootstrap-datepicker.js"></script>
+<link href="~/Content/bootstrap-datepicker3.css" rel="stylesheet" />
+<link href="~/Content/Developer.css" rel="stylesheet" />

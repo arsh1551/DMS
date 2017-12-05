@@ -1,0 +1,39 @@
+﻿@using CoreEntites.ViewModel
+@{    
+    Layout = null;
+}
+<html lang="en">
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <!-- Bootstrap CSS -->
+    <title>@ViewBag.Title -Accentrix</title>   
+    @Styles.Render("~/Content/css")
+    @Html.Partial("_urlVariables")
+    <script src="@Url.Content("~/Scripts/Custom/ForgetAndResetPwd.js")"></script>
+</head>
+
+<body class="white_bg">
+    <section class="login-outer" id="loginForm">
+        <div class="login-sec">
+            <div class="logo-dv"> <a href="#"><img src="~/images/logo.png" alt="" /></a> </div>
+            @RenderBody()
+        </div>
+    </section>
+</body>
+</html>
+@Scripts.Render("~/bundles/jquery")
+@Scripts.Render("~/bundles/bootstrap")
+@Scripts.Render("~/bundles/jqueryval")
+<link href="~/Scripts/Loader/css/jquery.loading.css" rel="stylesheet" />
+<script src="~/Scripts/Loader/js/jquery.loading.js"></script>
+
+
+
+
+
+
+
+
+

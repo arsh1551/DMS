@@ -1,0 +1,60 @@
+﻿@using CoreEntites.ViewModel
+@model LoginViewModel
+@{
+    ViewBag.Title = "Log in";
+    Layout = null;
+}
+<html lang="en">
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <!-- Bootstrap CSS -->
+    <title>LOGIN</title>
+    @Styles.Render("~/Content/css")
+</head>
+
+<body class="white_bg">
+    <section class="login-outer" id="loginForm">
+        <div class="login-sec">
+            
+            <div class="logo-dv"> <a href="#"><img src="~/images/logo.png" alt="" /></a> </div>
+            <p style="color:red">@ViewBag.Message</p>
+            @using (Html.BeginForm("Login", "Account", FormMethod.Post, new { @class = "form-horizontal", role = "form" }))
+            {
+                @Html.AntiForgeryToken()
+                @Html.ValidationSummary(true, "", new { @class = "text-danger" })
+                <div class="form-group">
+                    @Html.ValidationMessageFor(m => m.UserName, "", new { @class = "text-danger" })
+                    @Html.TextBoxFor(m => m.UserName, new { @class = "form-control", @placeholder = "Email", @maxlength = "100" })                    
+                </div>
+                <div class="form-group">
+                    @Html.ValidationMessageFor(m => m.Password, "", new { @class = "text-danger" })
+                    @Html.PasswordFor(m => m.Password, new { @class = "form-control", @placeholder = "Password", @maxlength = "50" })                    
+                </div>
+
+             
+                <div class="form-check clearfix">
+                    <label class="form-check-label">
+
+                        @Html.CheckBoxFor(m => m.RememberMe, new { @class = "form-check-input" })
+                        
+                        &nbsp;&nbsp;&nbsp;&nbsp;Remember me
+                    </label>
+                    <a href="@Url.Action("ForgotPassword","Account")" class="forget_text">Forgot password ?</a>
+
+                </div>
+                <input type="submit" name="Login" value="Login" class="btn btn-primary">
+              
+            }
+            <p>
+                @Html.ActionLink("Register as a new user", "Register", new { @class = "" })
+            </p>
+            <p class="available_text">All your documents are saved here. <span>Available 24/7</span></p>
+        </div>
+    </section>
+</body>
+</html>
+@Scripts.Render("~/bundles/jquery")
+@Scripts.Render("~/bundles/bootstrap")
+@Scripts.Render("~/bundles/jqueryval")

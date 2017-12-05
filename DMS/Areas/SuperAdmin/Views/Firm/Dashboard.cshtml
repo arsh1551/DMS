@@ -1,0 +1,26 @@
+﻿
+@using CoreEntites.SessionManagement;
+@{
+    Layout = "~/Areas/SuperAdmin/Views/Shared/_FirmLayout.cshtml";
+
+}
+@if (ViewBag.Success != null)
+{
+    <div class="alert alert-success" id="dvAlertSuccess">
+        <label id="lblAlertSuccess">@ViewBag.Success</label>
+    </div>
+}
+else
+{
+
+}
+<main class="col-sm-9 ml-sm-auto col-md-10 pt-3">
+    <div class="main_section" id="dvPartial">
+
+        <div>
+            <table id="jqlist" class="table table-striped supplier-table"></table>
+            <div id="jqControls"></div>
+        </div>
+    </div>
+</main>
+<script src="~/Areas/SuperAdmin/Scripts/DashBoardList.js"></script>

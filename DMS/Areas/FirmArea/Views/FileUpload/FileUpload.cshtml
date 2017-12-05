@@ -1,0 +1,13 @@
+﻿@model CoreEntites.ViewModel.FileUploadViewModel
+@{
+    ViewBag.Title = "FileUpload";
+    Layout = "~/Areas/FirmArea/Views/Shared/_FirmLayout.cshtml";
+}
+<main class="col-sm-9 ml-sm-auto col-md-10 pt-3">
+    <div class="main_section" id="dvPartial">
+        @Html.Partial("_UploadFilePartial")
+    </div>
+</main>
+@Html.HiddenFor(x => x.AccountingFirmId)
+    <script src="~/Scripts/Custom/FileUpload.js"></script>
+    <link href="~/Content/Developer.css" rel="stylesheet" />

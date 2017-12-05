@@ -1,0 +1,63 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <!-- Bootstrap CSS -->
+    <title>Dashboard</title>
+    @Styles.Render("~/Content/css")
+    <link href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700,900" rel="stylesheet">
+    @Scripts.Render("~/bundles/modernizr")
+    @Scripts.Render("~/bundles/jquery")
+    @Scripts.Render("~/bundles/bootstrap")
+    @Scripts.Render("~/bundles/jQuery-File-Upload");
+    @Scripts.Render("~/Content/jQuery-File-Upload");
+    @Scripts.Render("~/bundles/JQGridScripts")
+    @Html.Partial("_urlVariables")
+</head>
+<body>
+    <header class="fixed-top navbar-light">
+        <a href="Dashboard" class="logo">
+            <img src="~/images/logo.png" alt="home" class="web_view" />
+            <img src="~/images/logo_mobile.jpg" alt="home" class="mobile_view" />
+        </a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="dropdown">
+            <a class="btn btn-secondary dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+
+                Hello !! @(CoreEntites.SessionManagement.SessionManagement.LoggedInUser != null ? CoreEntites.SessionManagement.SessionManagement.LoggedInUser.UserName : "test")
+
+            </a>
+            <div class="dropdown-menu" aria-labelledby="dropdownMenuLink">
+                @* <a class="dropdown-item" href="#" id="btnProfile" data-target="#myModal" data-toggle="modal">Profile</a>*@
+                <a class="dropdown-item" href="@Url.Action("ChangePassword", "Individual", new { area = "IndividualsArea" })">Change Password</a>
+                <a class="dropdown-item" href="@Url.Action("LogOff", "Account", new { area = "" })">Logout</a>
+            </div>
+
+        </div>
+    </header>
+    <div class="container-fluid outer_box">
+        <div class="row">
+            <nav class="sidebar col-sm-3 col-md-2">
+                <ul class="nav-pills">
+                    <li class="drop_down">
+                        <a class="active" href="@Url.Action("FileUpload","FileUpload",new { @area="FirmArea"})"><span><img src="~/images/doc.svg" alt="" /></span> Document Management <em class="side_arrow"></em></a>
+                        <ul>
+                            <li><a href="@Url.Action("FileUpload","FileUpload",new { @area="FirmArea"})">File Manager</a></li>
+                            <li><a href="#">File Administration</a></li>
+                            @* <li><a href="#">Cloud Upload</a></li>*@
+                        </ul>
+                    </li>
+                    <li><a href="@Url.Action("Dashboard","Firm",new { @area="SuperAdmin"})"><span><img src="~/images/info.png" alt="" /></span>Firm Listing</a></li>
+                    <li><a href="@Url.Action("AddFirm","Firm",new { @area="SuperAdmin"})"><span><img src="~/images/info.png" alt="" /></span>Add Firm</a></li>
+                </ul>
+            </nav>
+            @RenderBody()
+
+        </div>
+    </div>
+</body>
+</html>
+

@@ -1,0 +1,47 @@
+/*Main Css*/
+
+body {
+    margin: 0px;
+    padding: 0px;
+   font-family: 'Roboto', sans-serif;
+    font-size: 14px;
+    font-weight: 400;
+    color: #676767; background-color: #f0eff5;
+}
+body,
+html {
+    height: 100%;
+}
+a:focus, a:hover{text-decoration: none;color: #fff;}
+a,
+img {
+    border: 0px;
+    outline: none;
+}
+a:hover{text-decoration: none;}
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p {
+    margin: 0px;
+    padding: 0px;
+}
+ul,
+li {
+    list-style: none;
+    margin: 0px;
+    padding: 0px;
+}
+/*Header Start*/
+
+header{width: 100%; background: #fff; box-shadow:0 0px 10px rgba(0,0,0,0.25); padding:11px 20px;}
+.logo img{ max-height: 62px;}
+header .dropdown{float: right; margin: 9px 0 0 0;}
+header .dropdown .btn{background: none; border: none; color: #767676; font-size: 16px; font-weight: 400;}
+header .dropdown img{margin: 0 10px 0 0;}
+header .dropdown .dropdown-menu{min-width: 207px;}
+header .dropdown-toggle::after{border: 0px; background: url(../images/dropdown.svg) no-repeat top right; width: 12px; height: 10px;}
+header .dropdown-toggle:focus, header .show .dropdown-toggle{background: none !important; border: 0px; box-shadow:none; background-color: #fff !important;}

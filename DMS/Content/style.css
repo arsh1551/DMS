@@ -1,0 +1,81 @@
+body{background: #eff4f9;font-family: 'Roboto', sans-serif;}
+.login-outer{width: 100%; height: 100%; position: relative; text-align: center;}
+.login-sec{width: 100%; max-width: 440px; padding:20px; margin: 125px 0 0 0; display: inline-block;}
+.login-sec .form-check-label{float: left; font-size: 14px; color: #646464;}
+.login-sec .form-check{margin:20px 0 38px 0; font-weight: 300;}
+.logo-dv{margin: 0 0 57px 0;}
+.logo-dv img{max-width: 100%;}
+.form-control{height: 46px; color: #646464; font-size: 16px; border: 1px solid #949494;}
+.form-group{margin-bottom: 20px;}
+.login-sec .btn {width: 100%; height: 60px; background:#6C6C6C; border-color: #6C6C6C; font-size: 22px; text-transform: uppercase; cursor: pointer;}
+.btn {width: 100%; height: 47px; background:#6C6C6C; border-color: #6C6C6C; font-size: 18px; text-transform: uppercase; cursor: pointer;}
+.login-sec .btn:hover{background: #949494;}
+.forget_text{color: #949494; float: right; font-size:14px;}
+.forget_text:hover, .forget_text:focus{color:#949494;}
+.available_text{display: block; clear: both; font-weight: 300; font-size: 14px; color: #000; margin:45px 0 0 0; text-align: center;}
+.available_text span{color:#949494; font-weight: 500;}
+button, input, optgroup, select, textarea {font-family: 'Roboto', sans-serif; font-weight: 300;}
+.form-check-label{padding-left: 0;}
+.form-check-input{margin-left: 0;margin-right: 8px;}
+.sidebar {
+	min-width: 244px;
+    position: fixed;
+    top: 84px;
+    bottom: 0;
+    left: 0;
+    z-index: 1000;
+    padding:0 0 20px 0;
+    overflow-x: hidden;
+	background: #6c6c6c;
+    overflow-y: auto; 
+}
+.nav-pills{width: 100%; display: inline-block;}
+.nav-pills li{width: 100%;
+display: block;
+float: left;
+clear: both;}
+.nav-pills li a{color: #fff;display: block; line-height: 43px; font-size: 16px; font-weight: 300; padding: 0 15px;}
+.nav-pills li a.active,.nav-pills li a:hover{background:#4C9ED9;}
+.nav-pills li ul li a:hover{background: #9e9e9e;}
+.nav-pills li ul{background:#818181;display: inline-block; width: 100%;}
+.nav-pills li a span{display: inline-block; margin: 0 6px 0 0;}
+.nav-pills li ul li a{line-height: 37px; padding-left: 53px}
+.main_section{padding:20px; background: #fff; margin-top:99px; min-height: calc(100vh - 140px);}
+main.col-sm-9{padding:0 30px 0 50px;}
+main h1{color: #000000; font-weight: 300; font-size: 25px; padding: 20px 20px 40px 20px;}
+.white_bg{background: #fff;}
+.grey_box{transition: ease-in-out 0.5s; -webkit-transition: ease-in-out 0.5s; width: 100%;cursor: pointer;border: 1px solid #d0d0d0; background: #fbfbfb; text-align: center; vertical-align: middle; display: table;}
+.middle_text{vertical-align: middle; display: table-cell; height: 225px;}
+.grey_box h3{color: #000; font-size: 16px; font-weight: 400; margin:40px 0 0 0px;}
+.main_section .icon_box{padding:22px 30px;}
+.web_view{display: inline-block;}
+.mobile_view, .navbar-toggler{display: none;}
+.navbar-toggler{cursor: pointer;margin:10px 0 0 5px;float: right;
+padding: 2px 5px; transition: ease-in-out 0.5s; -webkit-transition: ease-in-out 0.5s}
+.navbar-toggler:focus,.navbar-toggler:hover{outline: none; background: #FBFBFB; color: #fff;}
+.side_arrow{width: 7px; height: 11px; display: inline-block; background: url(../images/side_arrow.svg) no-repeat center;margin: 0 0 0 5px;}
+.open_dropdown .side_arrow{transform: rotate(90deg); -webkit-transform: rotate(90deg);	}
+.drop_down ul{ display: none !important;overflow: hidden;}
+.drop_down.open_dropdown ul{ display: block !important;}
+.grey_box:hover{border: 1px solid #6c6c6c;}
+.m_left20{margin-left: 20px !important;}
+select.form-control{height: 46px !important;}
+.registration_page .login-sec {
+    max-width:750px;
+	margin-top: 20px;
+}
+.registration_page .form-check {
+    margin: 0px 0 20px 0;
+}
+.custom-select.is-invalid, .form-control.is-invalid{
+    border-color: #dc3545;
+}
+.invalid-feedback { 
+    margin-top: .25rem;
+    font-size: .875rem;
+    color: #dc3545; text-align: left;
+}
+.custom-select.is-valid, .form-control.is-valid {
+    border-color: #28a745;
+}
+.m_top30{margin-top: 30px;}

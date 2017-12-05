@@ -1,0 +1,58 @@
+﻿@model DMS.Areas.IndividualsArea.Models.IndividualRegistrationViewModel
+@using CoreEntites.SessionManagement;
+@{
+    Layout = "~/Areas/IndividualsArea/Views/Shared/_IndividiualLayout.cshtml";
+
+}
+<main class="col-sm-9 ml-sm-auto col-md-10 pt-3">
+    <div class="main_section">
+        <h1>Find Your Clients</h1>
+
+        <div class="col-12">
+            <div class="input-group">
+                <input type="text" class="form-control" placeholder="Find Your Clients here..." aria-label="Recipient's username" aria-describedby="basic-addon2">
+                <span class="input-group-addon" id="basic-addon2">Search Client</span>
+            </div>
+
+            <div class="table-responsive m_top30">
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th scope="col">#</th>
+                            <th scope="col">Company Name</th>
+                            <th scope="col">Company Address</th>
+
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <th scope="row">1</th>
+                            <td>Company A</td>
+                            <td>Chandigarh</td>
+
+                        </tr>
+                        <tr>
+                            <th scope="row">2</th>
+                            <td>Company B</td>
+                            <td>Mohali</td>
+
+                        </tr>
+                        <tr>
+                            <th scope="row">3</th>
+                            <td>Company C</td>
+                            <td>Punjab</td>
+
+                        </tr>
+                    </tbody>
+                </table>
+
+            </div>
+
+        </div>
+
+
+    </div>
+</main>
+@*<script src="~/Scripts/jquery-1.12.4.js"></script>
+<script src="~/Areas/IndividualsArea/Scripts/IndividualRegistration.js"></script>
+<script src="~/Scripts/jquery.unobtrusive-ajax.js"></script>*@
