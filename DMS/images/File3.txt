@@ -1,0 +1,968 @@
+"IndividualController"
+
+using CoreEntites.Common;
+using CoreEntites.SessionManagement;
+using CoreEntites.ViewModel;
+using DMS.Areas.IndividualsArea.Models;
+using DMS.Controllers;
+using ServiceLayer.Interfaces;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Web;
+using System.Web.Mvc;
+
+namespace DMS.Areas.IndividualsArea.Controllers
+{
+    public class IndividualController : Controller
+    {
+        IAccountService _AccountService = null;
+        IIndividualService _IndividualService = null;
+        public IndividualController(IAccountService AccountService, IIndividualService IndividualService)
+        {
+            _AccountService = AccountService;
+            _IndividualService = IndividualService;
+        }
+
+        // GET: IndividualsArea/Individual
+        public ActionResult Dashboard()
+        {            
+            return View();
+        }
+        /// <summary>
+        /// CreatedDate:23-Nov-2017
+        /// Desc:Get detail of Individual Client
+        /// </summary>
+        /// <returns></returns>
+        public ActionResult GetIndividualClientDetail()
+        {
+            IndividualRegistrationViewModel _detail = _IndividualService.GetIndividualClientDetail(SessionManagement.LoggedInUser.UserId);
+            ViewBag.Prefix = CommonFunction.GetPrefix();
+            return PartialView("_EditIndividualPartial", _detail);
+            //return Json(_detail, JsonRequestBehavior.AllowGet);
+        }
+
+        /// <summary>
+        /// CreatedDate:23-Nov-2017
+        /// Desc:Update Record of Individual user
+        /// </summary>
+        /// <returns></returns>
+        [HttpPost]
+        public ActionResult EditIndividualProfile(IndividualRegistrationViewModel _IndividualDetail)
+        {
+            try
+            {
+                bool _result = _IndividualService.UpdateIndividualClient(_IndividualDetail);
+                if (_result == true)
+                    TempData["Message"] = "Information Updated Successfully";
+                return RedirectToAction("EditProfile");
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+        }
+        private IndividualRegistrationViewModel DetailForIndividualClient(FormCollection formCollection)
+        {
+            IndividualRegistrationViewModel _IndividualDetail = new IndividualRegistrationViewModel();
+            _IndividualDetail.IndividualRecordId = Convert.ToInt64(formCollection["IndividualRecordId"]);
+            _IndividualDetail.Prefix = formCollection["Prefix"];
+            _IndividualDetail.FirstName = formCollection["FirstName"];
+            _IndividualDetail.MiddleName = formCollection["MiddleName"];
+            _IndividualDetail.LastName = formCollection["LastName"];
+            _IndividualDetail.BirthDate = formCollection["BirthDate"];
+            _IndividualDetail.SSN = formCollection["SSN"];
+            _IndividualDetail.Phone = formCollection["Phone"];
+            _IndividualDetail.Suffix = formCollection["Suffix"];
+            return _IndividualDetail;
+        }
+        /// <summary>
+        /// CreatedDate:22-Nov-2017
+        /// Desc:Check the SSN already exists in db or not when updating a user
+        /// </summary>
+        /// <param name="SSN"></param>
+        /// <returns></returns>
+        public ActionResult IsSSNExistsForIndividualClient(string SSN, string IndividualRecordId)
+        {
+            bool _result = _IndividualService.IsSSNExistsForIndividualClient(SSN, Convert.ToInt64(IndividualRecordId));
+            return Json(_result, JsonRequestBehavior.AllowGet);
+        }
+        /// <summary>
+        /// CreatedDate:25-Nov-2017
+        /// Desc:To update the individual client's profile
+        /// </summary>
+        /// <returns></returns>
+        public ActionResult EditProfile()
+        {
+            IndividualRegistrationViewModel _detail = _IndividualService.GetIndividualClientDetail(SessionManagement.LoggedInUser != null ? SessionManagement.LoggedInUser.UserId : 0);
+            _detail.lstPrefix = CommonFunction.GetPrefix();
+            if (!string.IsNullOrEmpty(Convert.ToString(TempData["Message"])))
+                ViewBag.Message = TempData["Message"];
+            return View(_detail);
+        }
+
+        public ActionResult ChangePassword()
+        {
+            ChangePasswordViewModel model = new ChangePasswordViewModel();
+            if (SessionManagement.LoggedInUser != null)
+            {
+                model.UserId = SessionManagement.LoggedInUser.UserId;
+            }
+            return PartialView("_ChangePassword", model);
+        }
+        [HttpPost]
+        public ActionResult ChangePassword(ChangePasswordViewModel model)
+        {
+            bool result = _AccountService.ChangePassword(model);
+            if (result)
+                ViewBag.Message = "Password has been Changed Successfully";
+            else
+                ViewBag.Message = "Old Password is not correct!";
+
+            return PartialView("_ChangePassword", model);
+        }
+    }
+}
+
+*****************************************************************
+"cshtml"
+
+@model DMS.Areas.IndividualsArea.Models.IndividualRegistrationViewModel
+<div id="dvPartial">
+    @using (Ajax.BeginForm("EditIndividualProfile", "Individual", new AjaxOptions() { UpdateTargetId = "dvPartial", OnSuccess = "UpdateSuccess(data)" }, new { @class = "", @id = "Form1" }))
+    {
+        @Html.AntiForgeryToken()
+
+        <div class="form-horizontal">
+            @Html.ValidationSummary(true, "", new { @class = "text-danger" })
+            <div class="alert alert-danger" id="dvAlertDanger" hidden>
+                <a href="#" class="close" data-dismiss="alert">&times;</a>
+                <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>   <label id="lblAlertDanger"></label>
+            </div>
+            <div class="form-group">
+                <div class="col-md-10">
+                    @*  <input type="hidden" id="IndividualRecordId" value="IndividualRecordId" name="IndividualRecordId" />*@
+                    @Html.HiddenFor(model => model.IndividualRecordId)
+                </div>
+            </div>
+            <div class="form-group">
+                @Html.DropDownList("Prefix", new SelectList(ViewBag.Prefix, "Value", "Text"), new { @class = "form-control", @style = "margin-left: 2%;width:78%" })
+            </div>
+            <div class="form-group">
+                <div class="col-md-10">
+                    @Html.EditorFor(model => model.FirstName, new { htmlAttributes = new { @class = "form-control", @placeholder = "First Name", @maxlength = "50" } })
+                    @Html.ValidationMessageFor(model => model.FirstName, "", new { @class = "text-danger" })
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-md-10">
+                    @Html.EditorFor(model => model.MiddleName, new { htmlAttributes = new { @class = "form-control", @placeholder = "Middle Name", @maxlength = "50" } })
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-md-10">
+                    .
+                    @Html.EditorFor(model => model.LastName, new { htmlAttributes = new { @class = "form-control", @placeholder = "Last Name", @maxlength = "50" } })
+                    @Html.ValidationMessageFor(model => model.LastName, "", new { @class = "text-danger" })
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div class="col-md-10">
+                    @Html.EditorFor(model => model.BirthDate, new { htmlAttributes = new { @class = "form-control", @placeholder = "Date Of Birth" } })
+                    @Html.ValidationMessageFor(model => model.BirthDate, "", new { @class = "text-danger" })
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-md-10">
+                    @Html.EditorFor(model => model.SSN, new { htmlAttributes = new { @class = "form-control", @placeholder = "SSN", @id = "SSNumber",@maxlength = "9", @minlength = "9" } })
+                    @Html.ValidationMessageFor(model => model.SSN, "", new { @class = "text-danger" })
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-md-10">
+                    @Html.EditorFor(model => model.Phone, new { htmlAttributes = new { @class = "form-control", @placeholder = "Phone", @maxlength = "20" } })
+                    @Html.ValidationMessageFor(model => model.Phone, "", new { @class = "text-danger" })
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-md-10">
+                    @Html.EditorFor(model => model.Suffix, new { htmlAttributes = new { @class = "form-control", @placeholder = "Suffix", @maxlength = "50" } })
+                    @Html.ValidationMessageFor(model => model.Suffix, "", new { @class = "text-danger" })
+                </div>
+            </div>
+            <input type="submit" id="btnUpdate" name="UpdateProfile" value="Update Profile" class="btn btn-default" />
+        </div>
+
+    }
+</div>
+<script>  
+    $(document).ready(function () {
+        $('#BirthDate').datepicker({ dateFormat: "dd/MM/yyyy" });
+        $('#SSNumber').keydown(function (e) {
+            if (e.shiftKey || e.ctrlKey || e.altKey) {
+                e.preventDefault();
+            } else {
+                var key = e.keyCode;
+                if (!((key == 8) || (key == 46) || (key >= 35 && key <= 40) || (key >= 48 && key <= 57) || (key >= 96 && key <= 105))) {
+                    e.preventDefault();
+                }
+            }
+        });
+
+        $('#Phone').keydown(function (e) {
+            if (e.shiftKey || e.ctrlKey || e.altKey) {
+                e.preventDefault();
+            } else {
+                var key = e.keyCode;
+                if (!((key == 8) || (key == 46) || (key >= 35 && key <= 40) || (key >= 48 && key <= 57) || (key >= 96 && key <= 105))) {
+                    e.preventDefault();
+                }
+            }
+        });
+        $('#SSNumber').on('blur', function (e) {
+            $.ajax({
+                type: "POST",
+                url: 'IsSSNExistsForIndividualClient',
+                contentType: "application/json",
+                dataType: "json",
+                data: JSON.stringify({ SSN: $("#SSNumber").val(), IndividualRecordId: $('#IndividualRecordId').val() }),
+                success: function (response) {
+                    if (response == true) {
+                        $('#dvAlertDanger').css("display", "block");
+                        $('#lblAlertDanger').text("SSN Already Exists");
+                        $('#btnUpdate').prop("disabled", true);
+                    }
+                    else {
+                        $('#dvAlertDanger').css("display", "none");
+                        $('#lblAlertDanger').text(" ");
+                        $('#btnUpdate').prop("disabled", false);
+                    }
+                },
+                error: function (response) {
+                    console.log(response);
+                }
+            });
+        });
+    });
+</script>
+
+
+<script src="~/Scripts/jquery-1.12.4.js"></script>
+<script src="~/Scripts/bootstrap-datepicker.js"></script>
+<script src="~/Scripts/bootstrap.js"></script>
+<script src="~/Areas/IndividualsArea/Scripts/IndividualRegistration.js"></script>
+<script src="~/Scripts/jquery.validate.min.js"></script>
+<script src="~/Scripts/jquery.validate.unobtrusive.min.js"></script>
+<link href="~/Content/Developer.css" rel="stylesheet" />
+@*<script src="~/Scripts/jquery.unobtrusive-ajax.js"></script>*@
+
+********************************
+"IndividualRegistration.js"
+
+$(document).ready(function () {
+        var date = new Date();
+    var d = new Date();
+    d.setDate(date.getDate());
+    $('#BirthDate').datepicker({
+        endDate: d,
+        dateFormat: "dd/MM/yyyy"
+    });
+    $('#dvFirmName').hide();
+    if ($('#hdnMessage').val() != '') {
+        $('#dvRegister').hide();
+    }
+    else {
+        $('#dvRegister').show();
+    }
+    $("#btnProfile").click(function () {
+
+        $('#dvSuccess').hide();
+        $('#Modal-Header').text("Edit Individual Client");
+        $.ajax({
+            type: "POST",
+            url: "GetIndividualClientDetail",
+            contentType: "application/json; charset=utf-8",
+            dataType: 'html',
+            success: function (data) {
+                $('#dvClientDetail').html(data);
+                $('#dvClientDetail form').data('validator', null);
+                $.validator.unobtrusive.parse('#dvClientDetail form');
+            },
+            error: function (response) {
+                alert('Some Error Occured');
+            }
+        });
+    });
+    //debugger;
+    //$("#btnSubmit").click(function () {
+
+    //    $.ajax({
+    //        url: 'Account/Register',
+    //        type: 'POST',
+    //success: function (result) {
+                
+    //    windows.location.href = result.Url
+    //    alert(message);
+    //        }
+    //    });
+    //});
+    function Success(data) {
+        if (data.Prefix == 1) {
+            $('#Prefix').val(1);
+        }
+        else {
+            $('#Prefix').val(2);
+        }
+        $('#IndividualRecordId').val(data.IndividualRecordId);
+        $('#FirstName').val(data.FirstName);
+        $('#MiddleName').val(data.MiddleName);
+        $('#LastName').val(data.LastName);
+        $('#BirthDate').val(data.BirthDate);
+        $('#SSNumber').val(data.SSN);
+        $('#Phone').val(data.Phone);
+        $('#Suffix').val(data.Suffix);
+    };
+
+    $('#SSN').keydown(function (e) {
+        if (e.shiftKey || e.ctrlKey || e.altKey) {
+            e.preventDefault();
+        } else {
+            var key = e.keyCode;
+            if (!((key == 8) || (key == 46) || (key >= 35 && key <= 40) || (key >= 48 && key <= 57) || (key >= 96 && key <= 105)) && !(key == 9)) {
+                e.preventDefault();
+            }
+        }
+    });
+    $('#SSNumber').keydown(function (e) {
+        if (e.shiftKey || e.ctrlKey || e.altKey) {
+            e.preventDefault();
+        } else {
+            var key = e.keyCode;
+            if (!((key == 8) || (key == 46) || (key >= 35 && key <= 40) || (key >= 48 && key <= 57) || (key >= 96 && key <= 105)) && !(key == 9)) {
+                e.preventDefault();
+            }
+        }
+    });
+
+    $('#Phone').keydown(function (e) {
+        if (e.shiftKey || e.ctrlKey || e.altKey || e.tabKey) {
+            e.preventDefault();
+        } else {
+            var key = e.keyCode;
+            if (!((key == 8) || (key == 46) || (key >= 35 && key <= 40) || (key >= 48 && key <= 57) || (key >= 96 && key <= 105)) && !(key == 9)) {
+                e.preventDefault();
+            }
+        }
+    });
+    $('#SSN').on('blur', function (e) {
+        $.ajax({
+            type: "POST",
+            url: 'IsSSNExists',
+            contentType: "application/json",
+            dataType: "json",
+            data: JSON.stringify({ SSN: $("#SSN").val() }),
+            success: function (response) {
+                if (response == true) {
+                    $('#dvAlertDanger').css("display", "block");
+                    $('#lblAlertDanger').text("SSN Already Exists");
+                    $('#btnSubmit').prop("disabled", true);
+                    $('#dvAlertSuccess').hide();
+                }
+                else {
+                    $('#dvAlertDanger').css("display", "none");
+                    $('#lblAlertDanger').text(" ");
+                    $('#btnSubmit').prop("disabled", false);
+                }
+            },
+            error: function (response) {
+                console.log(response);
+            }
+        });
+    });
+    $('#SSNumber').on('blur', function (e) {
+        $.ajax({
+            type: "POST",
+            url: 'IsSSNExistsForIndividualClient',
+            contentType: "application/json",
+            dataType: "json",
+            data: JSON.stringify({ SSN: $("#SSNumber").val(), IndividualRecordId: $('#IndividualRecordId').val() }),
+            success: function (response) {
+                if (response == true) {
+                    $('#dvAlertDanger').css("display", "block");
+                    $('#lblAlertDanger').text("SSN Already Exists");
+                    $('#dvAlertSuccess').hide();
+                    $('#btnUpdate').prop("disabled", true);
+                }
+                else {
+                    $('#dvAlertDanger').css("display", "none");
+                    $('#lblAlertDanger').text(" ");
+                    $('#btnUpdate').prop("disabled", false);
+                }
+            },
+            error: function (response) {
+                console.log(response);
+            }
+        });
+    });
+
+    $('#rdoFirm').click(function (e) {
+        $('#dvFirmName').show()
+    });
+    $('#rdoIndividual').click(function (e) {
+        $('#dvFirmName').hide()
+    });
+
+});
+$('#EmailAddress').on('blur', function (e) {
+    $.ajax({
+        type: "POST",
+        url: "IsEmailExists",
+        contentType: "application/json",
+        dataType: "json",
+        data: JSON.stringify({ EmailAddress: $("#EmailAddress").val() }),
+        success: function (response) {
+            if (response == true) {
+                $('#dvAlertDanger').css("display", "block");
+                $('#lblAlertDanger').text("Email Already Exists");
+                $('#dvAlertSuccess').hide();
+                $('#btnSubmit').prop("disabled", true);
+            }
+            else {
+                $('#dvAlertDanger').css("display", "none");
+                $('#lblAlertDanger').text(" ");
+                $('#btnSubmit').prop("disabled", false);
+            }
+        },
+        error: function (response) {
+            console.log(response);
+        }
+    });
+});
+$('#UserName').on('blur', function (e) {
+    $.ajax({
+        type: "POST",
+        url: "IsUserExists",
+        contentType: "application/json",
+        dataType: "json",
+        data: JSON.stringify({ UserName: $("#UserName").val() }),
+        success: function (response) {
+            if (response == true) {
+                $('#dvAlertDanger').css("display", "block");
+                $('#lblAlertDanger').text("UserName Already Exists");
+                $('#btnSubmit').prop("disabled", true);
+            }
+            else {
+                $('#dvAlertDanger').css("display", "none");
+                $('#lblAlertDanger').text(" ");
+                $('#btnSubmit').prop("disabled", false);
+            }
+        },
+        error: function (response) {
+            console.log(response);
+        }
+    });
+});
+
+function UpdateSuccess(e) {
+    $('#dvSuccess').show();
+    $('#Modal-Header').text("");
+    $('#lblSuccess').text('Individiual Client Updated Successfully.');
+}
+
+********************************
+*******************************
+my module:
+
+using CoreEntites.SessionManagement;
+using CoreEntites.Common;
+using DMS.Areas.IndividualsArea.Models;
+using ServiceLayer.Interfaces;
+using ServiceLayer.Services;
+using System;
+using System.IO;
+using System.Web.Mvc;
+using static CoreEntites.SessionManagement.SessionManagement;
+using CoreEntites.ViewModel;
+using System.Web.Security;
+
+namespace DMS.Controllers
+{
+    public class AccountController : Controller
+    {
+        #region Variables
+        private IAccountService _iAcconutService;
+        private IEmailService _iEmailService;
+        private IIndividualService _IIndividualService;
+
+        #endregion
+        #region Constructor
+        public AccountController(IAccountService AccountService, IEmailService EmailService, IIndividualService IIndividualService)
+        {
+            this._iAcconutService = AccountService;
+            this._iEmailService = EmailService;
+            this._IIndividualService = IIndividualService;
+        }
+        #endregion
+
+        #region Login
+
+        /// <summary>
+        /// CreatedDate:21-Nov-2017
+        /// Desc:Login for the Users
+        /// </summary>
+        /// <returns></returns>
+        public ActionResult Login()
+        {
+            if (SessionManagement.LoggedInUser == null || SessionManagement.LoggedInUser.UserId == 0)
+            {
+                return View();
+            }
+            else
+            {
+                return RedirectToAction("AddClient", "Firm", new { area = "FirmArea" });
+            }
+
+        }
+
+        [HttpPost]
+        public ActionResult Login(LoginViewModel model)
+        {
+            var obj = _iAcconutService.LoginUser(model);
+            if (obj != null)
+            {
+                LoggedUserDetail userdetail = new LoggedUserDetail { UserId = obj.UserId, Email = obj.Email, FirstName = obj.FirstName, IndividualRecordId = obj.IndividualRecordId, UserName = obj.UserName, FirmId = obj.FirmId };
+                SessionManagement.LoggedInUser = userdetail;
+                return RedirectToAction("Dashboard", "Firms", new { area = "SuperAdmin" });
+            }
+            ViewBag.Message = "Invalid Email or Password!";
+            return View();
+        }
+        public ActionResult LogOff()
+        {
+            Session.Abandon();
+            return RedirectToAction("Login", "Account", new { area = "" });
+        }
+        #endregion
+
+        #region Registeration
+        /// <summary>
+        /// CreatedDate:21-Nov-2017
+        /// Desc:Registraion for the Indvidual Clients
+        /// </summary>
+        /// <returns></returns>
+        public ActionResult Register()
+        {
+            if (!string.IsNullOrEmpty(Convert.ToString(TempData["Result"])))
+            {
+                ViewBag.Message = TempData["Result"];
+            }
+            ViewBag.Prefix = CommonFunction.GetPrefix();
+            return View();
+        }
+
+        public ActionResult RegisterUser()
+        {
+            IndividualRegistrationViewModel _detail = _IndividualService.GetIndividualClientDetail(SessionManagement.LoggedInUser != null ? SessionManagement.LoggedInUser.UserId : 0);
+            _detail.lstPrefix = CommonFunction.GetPrefix();
+            if (!string.IsNullOrEmpty(Convert.ToString(TempData["Message"])))
+                ViewBag.Message = TempData["Message"];
+            return View(_detail);
+        }
+        [HttpPost]
+        public ActionResult Register(IndividualRegistrationViewModel IndividualRegistrationModel)
+        {
+            try
+            {
+                int individualId = _iAcconutService.InsertIndividualClient(IndividualRegistrationModel);
+                IndividualRegistrationModel.IndividualRecordId = individualId;
+                // bool _result = _iAcconutService.InsertIndividualClient(IndividualRegistrationModel);
+                //int id = IndividualRegistrationModel.IndividualRecordId;
+
+                //if (_result == true)
+                if (!(individualId < 0))
+                {
+                    //Confirm email logic here and then return message to user.
+                    //TempData["Result"] = "You have successfully registered. Please activate your account from email sent";
+                    // return RedirectToAction("ConfirmEmail", IndividualRegistrationModel);
+                    string UserId = IndividualRegistrationModel.IndividualRecordId.ToString();
+                    if (!string.IsNullOrEmpty(IndividualRegistrationModel.EmailAddress))
+                    {
+                        //var data = _iAcconutService.IsEmailExists(forgetpassword.Email);
+                        // UserViewModel userdetail = _iAcconutService.GetUserByEmail(forgetpassword.Email);
+                        //forgetpassword.tempUserId = CommonFunction.EncryptPassword(IndividualRegistrationModel.UserId.ToString());
+                        //forgetpassword.Name = userdetail.FirstName;
+                        // forgetpassword.tempUserId = CommonFunction.EncryptPassword(userdetail.UserId.ToString());
+
+                        string Email = RenderRazorViewToString("~/Views/EmailTemplates/UserConfirmationEmail_Template.cshtml", IndividualRegistrationModel);
+
+                        // bool esmailsent = _iEmailService.SendForgotPasswordEmail(userdetail.FirstName, userdetail.Email, userdetail.Email, mailBody);
+
+                        string FullName = IndividualRegistrationModel.FirstName + ' ' + IndividualRegistrationModel.LastName;
+                        _iEmailService.SendRegistrationEmail(FullName, Email, IndividualRegistrationModel.EmailAddress);
+                        TempData["Result"] = "You have successfully registered. Please activate your account from email sent";
+
+                        //return Json(new { message= TempData["Result"] });
+                        // return Json(new { result = "Redirect", url = Url.Action("ConfirmEmail", "Account", new { Area = "SuperAdmin", IndividualRecordId = IndividualRecordId }), objmodal });
+                        //return Json(new { result = "Redirect", url = Url.Action("ConfirmEmail", "Account") });
+                        RegisterUser
+                    }
+                }
+                else
+                {
+                    TempData["Result"] = "Error in registration";
+                    return Json(new { message = TempData["Result"]});
+                }
+                return RedirectToAction("Register");
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
+
+        }
+
+        public ActionResult ConfirmEmail()
+        {
+            return View();
+        }
+        /// <summary>
+        /// CreatedDate:22-Nov-2017
+        /// Desc:To check Email exists or not
+        /// </summary>
+        /// <param name="EmailAddress"></param>
+        /// <returns></returns>
+        public ActionResult IsEmailExists(string EmailAddress)
+        {
+            bool _result = _iAcconutService.IsEmailExists(EmailAddress);
+            return Json(_result, JsonRequestBehavior.AllowGet);
+        }
+        /// <summary>
+        /// CreatedDate:22-Nov-2017
+        /// Desc:To check UserName exists or not
+        /// </summary>
+        /// <param name="UserName"></param>
+        /// <returns></returns>
+        public ActionResult IsUserExists(string UserName)
+        {
+            bool _result = _iAcconutService.IsUserExists(UserName);
+            return Json(_result, JsonRequestBehavior.AllowGet);
+        }
+        /// <summary>
+        /// CreatedDate:22-Nov-2017
+        /// Desc:Check the SSN already exists in db or not
+        /// </summary>
+        /// <param name="SSN"></param>
+        /// <returns></returns>
+        public ActionResult IsSSNExists(string SSN)
+        {
+            bool _result = _iAcconutService.IsSSNExists(SSN);
+            return Json(_result, JsonRequestBehavior.AllowGet);
+        }
+        #endregion
+
+        #region Manage user
+
+        public ActionResult ChangePassword()
+        {
+            ChangePasswordViewModel model = new ChangePasswordViewModel();
+            if (SessionManagement.LoggedInUser != null)
+            {
+                model.UserId = SessionManagement.LoggedInUser.UserId;
+            }
+            //return View(model);
+            return PartialView("_ChangePassword", model);
+        }
+        [HttpPost]
+        public ActionResult ChangePassword(ChangePasswordViewModel model)
+        {
+            bool result = _iAcconutService.ChangePassword(model);
+            if (result)
+                ViewBag.Success = "Password has been Change Successfully";
+            else
+                ViewBag.Warning = "Old Password is not correct!";
+
+            return PartialView("_ChangePassword", model);
+        }
+
+        public ActionResult ForgotPassword()
+        {
+            return View();
+        }
+        [HttpPost]
+        [AllowAnonymous]
+        public ActionResult SendMailForgotPassword(ForgetPasswordViewModel forgetpassword)
+        {
+            if (!string.IsNullOrEmpty(forgetpassword.Email))
+            {
+
+                var data = _iAcconutService.IsEmailExists(forgetpassword.Email);
+                if (data)
+                {
+                    UserViewModel userdetail = _iAcconutService.GetUserByEmail(forgetpassword.Email);
+                    forgetpassword.tempUserId = CommonFunction.EncryptPassword(userdetail.UserId.ToString());
+                    forgetpassword.Name = userdetail.FirstName;
+                    string mailBody = RenderRazorViewToString("~/Views/EmailTemplates/UserForgetPassword_Template.cshtml", forgetpassword);
+                    bool esmailsent = _iEmailService.SendForgotPasswordEmail(userdetail.FirstName, userdetail.Email, userdetail.Email, mailBody);
+                    return Json(new { success = data, mailsent = esmailsent }, JsonRequestBehavior.AllowGet);
+
+                }
+                return Json(new { success = data }, JsonRequestBehavior.AllowGet);
+            }
+            return Json(false, JsonRequestBehavior.AllowGet);
+
+
+        }
+
+
+        public ActionResult ResetPassword(string id)
+        {
+            string userid = string.Empty;
+            ResetPasswordViewModel model = new ResetPasswordViewModel();
+            if (!string.IsNullOrEmpty(id))
+            {
+                userid = CommonFunction.DecryptPassword(id);
+                model.UserId = Convert.ToInt64(userid);
+            }
+            else
+            {
+                return RedirectToAction("ForgotPassword", "Account", new { @area = "" });
+            }
+            return View(model);
+        }
+        [HttpPost]
+        public ActionResult ResetPassword(ResetPasswordViewModel resetpassword)
+        {
+            string message = _iAcconutService.ResetUserPassword(resetpassword);
+            return RedirectToAction("Login", "Account", new { @area = "" });
+        }
+        ////Created by Arshdeep Kaur
+        //Sends activation link to user via email after registration 
+        public ActionResult ConfirmEmail(IndividualRegistrationViewModel IndividualRegistrationModel)
+        {
+            string UserId = IndividualRegistrationModel.IndividualRecordId.ToString();
+            if (!string.IsNullOrEmpty(IndividualRegistrationModel.EmailAddress))
+            {
+                //var data = _iAcconutService.IsEmailExists(forgetpassword.Email);
+                // UserViewModel userdetail = _iAcconutService.GetUserByEmail(forgetpassword.Email);
+                //forgetpassword.tempUserId = CommonFunction.EncryptPassword(IndividualRegistrationModel.UserId.ToString());
+                //forgetpassword.Name = userdetail.FirstName;
+                // forgetpassword.tempUserId = CommonFunction.EncryptPassword(userdetail.UserId.ToString());
+
+                string Email = RenderRazorViewToString("~/Views/EmailTemplates/UserConfirmationEmail_Template.cshtml", IndividualRegistrationModel);
+
+                // bool esmailsent = _iEmailService.SendForgotPasswordEmail(userdetail.FirstName, userdetail.Email, userdetail.Email, mailBody);
+
+                string FullName = IndividualRegistrationModel.FirstName + ' ' + IndividualRegistrationModel.LastName;
+                //_iEmailService.SendRegistrationEmail(FullName, Email, IndividualRegistrationModel.EmailAddress);
+
+            }
+
+            //return Json(true, JsonRequestBehavior.AllowGet);
+            return View("ConfirmEmail");
+        }
+        //Created by Arshdeep Kaur
+        // Updates UserInformation and activates user account after user clicks on activation link sent via email 
+        public ActionResult ConfirmActivateUser(string UserId)
+        {
+            //get user decrypt id and update isactive =true and isemailconfirm =true
+
+            string userid = string.Empty;
+            IndividualRegistrationViewModel ActivateUser = new IndividualRegistrationViewModel();
+            if (!string.IsNullOrEmpty(UserId))
+            {
+                userid = CommonFunction.DecryptPassword(UserId);
+                //ActivateUser.IndividualRecordId =Convert.ToInt32(userid);
+                ActivateUser.IndividualRecordId = Int32.Parse(userid);
+                bool status = _IIndividualService.UpdateIndividualClientUser(ActivateUser);
+                if (status == true)
+                {
+                    return View("ConfirmEmail", ActivateUser);
+
+                }
+
+            }
+            //if user doesn't activate his account. Write here.
+            return View("Login");
+
+
+        }
+        #endregion
+
+        #region Methods
+        public string RenderRazorViewToString(string viewName, object model)
+        {
+            ViewData.Model = model;
+            using (var sw = new StringWriter())
+            {
+                var viewResult = ViewEngines.Engines.FindPartialView(ControllerContext, viewName);
+                var viewContext = new ViewContext(ControllerContext, viewResult.View, ViewData, TempData, sw);
+                viewResult.View.Render(viewContext, sw);
+                viewResult.ViewEngine.ReleaseView(ControllerContext, viewResult.View);
+                return sw.GetStringBuilder().ToString();
+            }
+        }
+
+        #endregion
+
+
+    }
+}
+******************************
+"Register.cshtml"
+
+@model DMS.Areas.IndividualsArea.Models.IndividualRegistrationViewModel
+
+@{
+    ViewBag.Title = "Register";
+    //Layout = "~/Views/Shared/_Layout.cshtml";
+    Layout = null;
+}
+@Styles.Render("~/Content/css")
+@Scripts.Render("~/bundles/modernizr")
+<body class="white_bg">
+    <section class="login-outer registration_page">
+        <div class="login-sec">
+            
+            <div class="logo-dv"> <a href="#"><img src="~/images/logo.png" alt="" /></a> </div>
+            <div class="alert alert-danger alert-dismissible fade show" id="dvAlertDanger" role="alert" style="display:none">
+                <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
+                <label id="lblAlertDanger"></label>
+                @*<button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>*@
+            </div>
+            @using (Html.BeginForm("Register", "Account", FormMethod.Post, new { @class = "", role = "form" }))
+            {
+                @Html.AntiForgeryToken()
+                if (!string.IsNullOrEmpty(Convert.ToString(ViewBag.Message)))
+                {
+                    <div class="alert alert-success">
+                        <a href="#" class="close" data-dismiss="alert">&times;</a>
+                        @ViewBag.Message<i class="fa fa-check" aria-hidden="true"></i>
+                    </div>
+                    <p>
+                        @Html.ActionLink("Click here to login", "Login")
+                    </p>
+                }
+                else
+                {
+
+                }
+                <div class="" id="dvRegister">
+                    @Html.ValidationSummary(true, "", new { @class = "text-danger" })
+                    <div class="row">
+                        <div class="col-6">
+                            <div class="form-group">
+                                @Html.DropDownList("Prefix", new SelectList(ViewBag.Prefix, "Value", "Text"), new { @class = "form-control" })
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="form-group">
+                                @Html.EditorFor(model => model.FirstName, new { htmlAttributes = new { @class = "form-control", @placeholder = "First Name", @maxlength = "50" } })
+                                @Html.ValidationMessageFor(model => model.FirstName, "", new { @class = "invalid-feedback" })
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-6">
+                            <div class="form-group">
+                                @Html.EditorFor(model => model.MiddleName, new { htmlAttributes = new { @class = "form-control", @placeholder = "Middle Name", @maxlength = "50" } })
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="form-group">
+                                @Html.EditorFor(model => model.LastName, new { htmlAttributes = new { @class = "form-control", @placeholder = "Last Name", @maxlength = "50" } })
+                                @Html.ValidationMessageFor(model => model.LastName, "", new { @class = "invalid-feedback" })
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-6">
+                            <div class="form-group">
+                                @Html.EditorFor(model => model.Suffix, new { htmlAttributes = new { @class = "form-control", @placeholder = "Suffix", @maxlength = "50" } })
+                                @Html.ValidationMessageFor(model => model.Suffix, "", new { @class = "invalid-feedback" })
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="form-group">
+                                @Html.EditorFor(model => model.BirthDate, new { htmlAttributes = new { @class = "form-control", @placeholder = "Date Of Birth" } })
+                                @Html.ValidationMessageFor(model => model.BirthDate, "", new { @class = "invalid-feedback" })
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-6">
+                            <div class="form-group">
+                                @Html.EditorFor(model => model.SSN, new { htmlAttributes = new { @class = "form-control", @placeholder = "SSN", @maxlength = "9", @minlength = "9"} })
+                                @Html.ValidationMessageFor(model => model.SSN, "", new { @class = "invalid-feedback" })
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="form-group">
+                                @Html.EditorFor(model => model.Phone, new { htmlAttributes = new { @class = "form-control", @placeholder = "Phone", @maxlength = "10", @minlength = "10" } })
+                                @Html.ValidationMessageFor(model => model.Phone, "", new { @class = "invalid-feedback" })
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-6">
+                            <div class="form-group">
+                                @Html.EditorFor(model => model.UserName, new { htmlAttributes = new { @class = "form-control", @placeholder = "UserName", @maxlength = "30" } })
+                                @Html.ValidationMessageFor(model => model.UserName, "", new { @class = "invalid-feedback" })
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="form-group">
+                                @Html.EditorFor(model => model.EmailAddress, new { htmlAttributes = new { @class = "form-control", @placeholder = "Email", @maxlength = "100" } })
+                                @Html.ValidationMessageFor(model => model.EmailAddress, "", new { @class = "invalid-feedback" })
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-6">
+                            <div class="form-group">
+                                @Html.PasswordFor(model => model.Password, new { @class = "form-control", @placeholder = "Password", @maxlength = "50" })
+                                @Html.ValidationMessageFor(model => model.Password, "", new { @class = "invalid-feedback" })
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="form-group">
+                                @Html.PasswordFor(m => m.ConfirmPassword, new { @class = "form-control", @placeholder = "Confirm Password", @maxlength = "50" })
+                                @Html.ValidationMessageFor(model => model.ConfirmPassword, "", new { @class = "invalid-feedback" })
+                            </div>
+                        </div>
+                    </div>
+                    <div class="clearfix text-left" hidden>
+                        <div class="form-check form-check-inline">
+                            <label class="form-check-label">
+                                @Html.RadioButtonFor(model => model.IsIndividualClient, "1", new { @checked = true, @class = "form-check-input" })Individual User
+                            </label>
+                        </div>
+                        <div class="form-check form-check-inline m_left20">
+                            <label class="form-check-label">@Html.RadioButtonFor(model => model.IsIndividualClient, "0", new { @class = "form-check-input", })Accounting Firm</label>
+                        </div>
+                    </div>
+                    <input type="submit" value="Register" id="btnSubmit" class="btn btn-primary" />
+                    <p style="text-decoration:underline"> 
+                        @Html.ActionLink("Back to login", "Login", new { @class = "" })
+                    </p>
+                </div>
+            }
+        </div>
+    </section>
+</body>
+
+@Scripts.Render("~/bundles/jquery")
+@Scripts.Render("~/bundles/bootstrap")
+@Scripts.Render("~/bundles/jqueryval")
+@*@RenderSection("scripts", required: false)*@
+<input type="hidden" id="hdnMessage" value="@ViewBag.Message" />
+<script src="~/Scripts/jquery-1.12.4.js"></script>
+<script src="~/Areas/IndividualsArea/Scripts/IndividualRegistration.js"></script>
+<script src="~/Scripts/bootstrap-datepicker.js"></script>
+<link href="~/Content/bootstrap-datepicker3.css" rel="stylesheet" />
+<link href="~/Content/Developer.css" rel="stylesheet" />
+********************
+Js:
+Same Individualregistration.js

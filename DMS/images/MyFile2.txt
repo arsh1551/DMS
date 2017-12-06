@@ -1,0 +1,547 @@
+
+//AccountController:
+
+using CoreEntites.SessionManagement;
+using CoreEntites.Common;
+using DMS.Areas.IndividualsArea.Models;
+using ServiceLayer.Interfaces;
+using ServiceLayer.Services;
+using System;
+using System.IO;
+using System.Web.Mvc;
+using static CoreEntites.SessionManagement.SessionManagement;
+using CoreEntites.ViewModel;
+using System.Web.Security;
+
+namespace DMS.Controllers
+{
+    public class AccountController : Controller
+    {
+        #region Variables
+        private IAccountService _iAcconutService;
+        private IEmailService _iEmailService;
+        #endregion
+        #region Constructor
+        public AccountController(IAccountService AccountService, IEmailService EmailService)
+        {
+            this._iAcconutService = AccountService;
+            this._iEmailService = EmailService;
+        }
+        #endregion
+
+        #region Login
+
+        /// <summary>
+        /// CreatedDate:21-Nov-2017
+        /// Desc:Login for the Users
+        /// </summary>
+        /// <returns></returns>
+        public ActionResult Login()
+        {
+            if (SessionManagement.LoggedInUser == null || SessionManagement.LoggedInUser.UserId == 0)
+            {
+                return View();
+            }
+            else
+            {
+                return RedirectToAction("AddClient", "Firm", new { area = "FirmArea" });
+            }
+
+        }
+
+        [HttpPost]
+        public ActionResult Login(LoginViewModel model)
+        {
+            var obj = _iAcconutService.LoginUser(model);
+            if (obj != null)
+            {
+                LoggedUserDetail userdetail = new LoggedUserDetail { UserId = obj.UserId, Email = obj.Email, FirstName = obj.FirstName, IndividualRecordId = obj.IndividualRecordId, UserName = obj.UserName, FirmId = obj.FirmId };
+                SessionManagement.LoggedInUser = userdetail;
+                return RedirectToAction("Dashboard", "Firms", new { area = "SuperAdmin" });
+            }
+            ViewBag.Message = "Invalid Email or Password!";
+            return View();
+        }
+        public ActionResult LogOff()
+        {
+            Session.Abandon();
+            return RedirectToAction("Login", "Account", new { area = "" });
+        }
+        #endregion
+
+        #region Registeration
+        /// <summary>
+        /// CreatedDate:21-Nov-2017
+        /// Desc:Registraion for the Indvidual Clients
+        /// </summary>
+        /// <returns></returns>
+        public ActionResult Register()
+        {
+            if (!string.IsNullOrEmpty(Convert.ToString(TempData["Result"])))
+            {
+                ViewBag.Message = TempData["Result"];
+            }
+            ViewBag.Prefix = CommonFunction.GetPrefix();
+            return View();
+        }
+
+        [HttpPost]
+        public ActionResult Register(IndividualRegistrationViewModel IndividualRegistrationModel)
+        {
+            try
+            {
+                bool _result = _iAcconutService.InsertIndividualClient(IndividualRegistrationModel);
+                if (_result == true)
+                {
+                    TempData["Result"] = "You have successfully registered. Please activate your account from email sent";
+                    return RedirectToAction("ConfirmEmail", IndividualRegistrationModel);
+                }
+                else
+                {
+                    TempData["Result"] = "Error occured while registeration";
+                }
+                return RedirectToAction("Register");
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
+
+        }
+        /// <summary>
+        /// CreatedDate:22-Nov-2017
+        /// Desc:To check Email exists or not
+        /// </summary>
+        /// <param name="EmailAddress"></param>
+        /// <returns></returns>
+        public ActionResult IsEmailExists(string EmailAddress)
+        {
+            bool _result = _iAcconutService.IsEmailExists(EmailAddress);
+            return Json(_result, JsonRequestBehavior.AllowGet);
+        }
+        /// <summary>
+        /// CreatedDate:22-Nov-2017
+        /// Desc:To check UserName exists or not
+        /// </summary>
+        /// <param name="UserName"></param>
+        /// <returns></returns>
+        public ActionResult IsUserExists(string UserName)
+        {
+            bool _result = _iAcconutService.IsUserExists(UserName);
+            return Json(_result, JsonRequestBehavior.AllowGet);
+        }
+        /// <summary>
+        /// CreatedDate:22-Nov-2017
+        /// Desc:Check the SSN already exists in db or not
+        /// </summary>
+        /// <param name="SSN"></param>
+        /// <returns></returns>
+        public ActionResult IsSSNExists(string SSN)
+        {
+            bool _result = _iAcconutService.IsSSNExists(SSN);
+            return Json(_result, JsonRequestBehavior.AllowGet);
+        }
+        #endregion
+
+        #region Manage user
+
+        public ActionResult ChangePassword()
+        {
+            ChangePasswordViewModel model = new ChangePasswordViewModel();
+            if (SessionManagement.LoggedInUser != null)
+            {
+                model.UserId = SessionManagement.LoggedInUser.UserId;
+            }
+            //return View(model);
+            return PartialView("_ChangePassword", model);
+        }
+        [HttpPost]
+        public ActionResult ChangePassword(ChangePasswordViewModel model)
+        {
+            bool result = _iAcconutService.ChangePassword(model);
+            if (result)
+                ViewBag.Success = "Password has been Change Successfully";
+            else
+                ViewBag.Warning = "Old Password is not correct!";
+
+            return PartialView("_ChangePassword", model);
+        }
+
+        public ActionResult ForgotPassword()
+        {
+            return View();
+        }
+        [HttpPost]
+        [AllowAnonymous]
+        public ActionResult SendMailForgotPassword(ForgetPasswordViewModel forgetpassword)
+        {
+            if (!string.IsNullOrEmpty(forgetpassword.Email))
+            {
+
+                var data = _iAcconutService.IsEmailExists(forgetpassword.Email);
+                if (data)
+                {
+                    UserViewModel userdetail = _iAcconutService.GetUserByEmail(forgetpassword.Email);
+                    forgetpassword.tempUserId = CommonFunction.EncryptPassword(userdetail.UserId.ToString());
+                    forgetpassword.Name = userdetail.FirstName;
+                    string mailBody = RenderRazorViewToString("~/Views/EmailTemplates/UserForgetPassword_Template.cshtml", forgetpassword);
+                    bool esmailsent = _iEmailService.SendForgotPasswordEmail(userdetail.FirstName, userdetail.Email, userdetail.Email, mailBody);
+                    return Json(new { success = data, mailsent = esmailsent }, JsonRequestBehavior.AllowGet);
+
+                }
+                return Json(new { success = data }, JsonRequestBehavior.AllowGet);
+            }
+            return Json(false, JsonRequestBehavior.AllowGet);
+
+
+        }
+
+
+        public ActionResult ResetPassword(string id)
+        {
+            string userid = string.Empty;
+            ResetPasswordViewModel model = new ResetPasswordViewModel();
+            if (!string.IsNullOrEmpty(id))
+            {
+                userid = CommonFunction.DecryptPassword(id);
+                model.UserId = Convert.ToInt64(userid);
+            }
+            else
+            {
+                return RedirectToAction("ForgotPassword", "Account", new { @area = "" });
+            }
+            return View(model);
+        }
+        [HttpPost]
+        public ActionResult ResetPassword(ResetPasswordViewModel resetpassword)
+        {
+            string message = _iAcconutService.ResetUserPassword(resetpassword);
+            return RedirectToAction("Login", "Account", new { @area = "" });
+        }
+        ////Created by Arshdeep Kaur
+        //Sends activation link to user via email after registration 
+        public ActionResult ConfirmEmail(IndividualRegistrationViewModel IndividualRegistrationModel)
+        {
+            if (!string.IsNullOrEmpty(IndividualRegistrationModel.EmailAddress))
+            {
+                //var data = _iAcconutService.IsEmailExists(forgetpassword.Email);
+                // UserViewModel userdetail = _iAcconutService.GetUserByEmail(forgetpassword.Email);
+                //forgetpassword.tempUserId = CommonFunction.EncryptPassword(IndividualRegistrationModel.UserId.ToString());
+                //forgetpassword.Name = userdetail.FirstName;
+                // forgetpassword.tempUserId = CommonFunction.EncryptPassword(userdetail.UserId.ToString());
+                
+                string Email = RenderRazorViewToString("~/Views/EmailTemplates/UserConfirmationEmail_Template.cshtml", IndividualRegistrationModel);
+
+                // bool esmailsent = _iEmailService.SendForgotPasswordEmail(userdetail.FirstName, userdetail.Email, userdetail.Email, mailBody);
+               
+                string FullName = IndividualRegistrationModel.FirstName + ' ' + IndividualRegistrationModel.LastName;
+                //_iEmailService.SendRegistrationEmail(FullName, Email, IndividualRegistrationModel.EmailAddress);
+
+                        }
+
+            return Json(true, JsonRequestBehavior.AllowGet);
+        }
+        //Created by Arshdeep Kaur
+       // Updates UserInformation and activates user account after user clicks on activation link sent via email 
+        public ActionResult ConfirmActivateUser(string UserId)
+        {
+            //get user decrypt id and update isactive =true and isemailconfirm =true
+            
+            string userid = string.Empty;
+            IndividualRegistrationViewModel ActivateUser = new IndividualRegistrationViewModel();
+            IIndividualService _IndividualService = null;
+            if (!string.IsNullOrEmpty(UserId))
+            {
+                userid = CommonFunction.DecryptPassword(UserId);
+                ActivateUser.IndividualRecordId = Convert.ToInt64(userid);
+                bool status = _IndividualService.UpdateIndividualClientUser(ActivateUser);
+                if (status == true)
+                {
+                    return View("ConfirmEmail", ActivateUser);
+
+                }
+                
+            }
+            //if user doesn't activate his account. Write here.
+            return View ("Login");
+
+
+        }
+        #endregion
+
+        #region Methods
+        public string RenderRazorViewToString(string viewName, object model)
+        {
+            ViewData.Model = model;
+            using (var sw = new StringWriter())
+            {
+                var viewResult = ViewEngines.Engines.FindPartialView(ControllerContext, viewName);
+                var viewContext = new ViewContext(ControllerContext, viewResult.View, ViewData, TempData, sw);
+                viewResult.View.Render(viewContext, sw);
+                viewResult.ViewEngine.ReleaseView(ControllerContext, viewResult.View);
+                return sw.GetStringBuilder().ToString();
+            }
+        }
+
+        #endregion
+
+
+    }
+}
+
+Email template:
+@using CoreEntites.Common;
+@model DMS.Areas.IndividualsArea.Models.IndividualRegistrationViewModel
+@using CoreEntites.Common.Helper;
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Email Templates</title>
+    <style type="text/css">
+        * {
+            box-sizing: border-box;
+        }
+
+        @@media all and (max-width: 650px) {
+            body, table, td, p, a, li, blockquote {
+                -webkit-text-size-adjust: none !important;
+            }
+
+            a {
+                white-space: nowrap;
+            }
+
+            table [class="contenttable"] {
+                width: 100% !important;
+            }
+
+            .width570 {
+                width: 100% !important;
+                max-width: 570px;
+            }
+        }
+
+        @@media all and (max-width: 500px) {
+            .t-one {
+                width: 100% !important;
+                display: block;
+            }
+
+            .three {
+                text-align: left !important;
+            }
+
+            .seven span {
+                font-size: 14px !important;
+                padding: 0 0 0 10px !important;
+            }
+
+            .seven .sp-1 {
+                width: 60px !important;
+            }
+
+            .f-five {
+                width: 100% !important;
+                display: block;
+                text-align: center !important;
+                margin: 0 0 10px 0;
+            }
+
+            .fr-seven, .fr-three {
+                width: 100% !important;
+                text-align: center !important;
+                display: block;
+            }
+
+            .fr-seven {
+                margin: 0 0 10px 0 !important;
+            }
+
+            .w-auto {
+                width: auto !important;
+                text-align: left !important;
+            }
+
+            .ft-12 td {
+                font-size: 12px !important;
+            }
+
+            table td img {
+                max-width: 100% !important;
+            }
+        }
+    </style>
+</head>
+<body style="margin: 0px; padding: 0px; -webkit-text-size-adjust: none; -ms-text-size-adjust: none; min-width: 100%;" yahoo="fix">
+    <table border="0" cellpadding="0" cellspacing="0" width="100%" bgcolor="#ffffff" style="background: #fff;">
+        <tr>
+            <td>
+                <table class="width570" align="center" border="0" cellpadding="0" cellspacing="0" width="600">
+                    <tr>
+                        <td>
+                            <table width="100%" cellspacing="0" cellpadding="0" border="0" align="center" style="font-family: Arial,sans-serif; border-collapse: collapse; box-sizing: border-box;">
+                                <tbody>
+                                    <tr>
+                                        <td height="10">&nbsp;</td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                                                <tbody>
+
+                                                    <tr>
+
+                                                        <td width="75" style="padding: 7px 12px;">
+                                                            <img alt="" src="@WebConfigurationHelper.GetAppSettingValue("SiteUrl")/images/logo.png" style="vertical-align: middle; margin-left: 7px; padding: 10px;">
+
+                                                        </td>
+
+
+                                                        <td width="8" bgcolor="#ffffff" style="width: 8px; background-color: #ffffff;"></td>
+
+
+                                                        @*<td align="center" valign="middle" style="font-family: Arial; padding: 7px 12px; color: #fff; font-size: 27px; vertical-align: middle; border-right: 2px solid #fff; background-color: #6c6c6c; text-align: left;"
+                                                                bgcolor="#6c6c6c">
+                                                                <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                                                                    <tr>
+                                                                        <td width="50px" style="padding-right: 10px;">
+                                                                            <img alt="" src="@WebConfigurationHelper.GetAppSettingValue("SiteUrl")/Content/EmailTemplate/Images/Alert2.png" style="vertical-align: middle;">
+                                                                        </td>
+                                                                        <td style="font-family: Arial; font-size: 16px; color: #ffffff; padding-left: 10px; padding-top: 5px; padding-bottom: 5px; text-transform: uppercase">PASSWORD RESET</td>
+                                                                    </tr>
+                                                                </table>
+                                                            </td>*@
+
+
+
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td height="10" style="height: 8px; line-height: 8px; background: #fffffff;" bgcolor="#ffffff">
+                                            &nbsp;
+
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style="font-family: Arial,sans-serif; font-size: 14px; color: #404041; text-transform: uppercase; text-align: center; padding: 12px 10px;">
+                                            **This is an auto-generated Email, please do not reply**
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td height="10" style="height: 8px; line-height: 8px; background: #fff;" bgcolor="#fff">
+                                            &nbsp;
+
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            <table width="100%" border="0" cellspacing="0" cellpadding="0" bgcolor="#ffffff" style="background: #ffffff; border: 0px solid #ffffff;" class="ft-12">
+                                                <tbody>
+
+                                                    <tr>
+                                                        <td valign="top" width="142" bgcolor="#eff4f9" style="font-family: Arial; color: #ffffff; font-size: 18px; text-align: left; padding: 20px 20px 20px 20px;">
+                                                            <p style="font-family: Arial; color: #404041; font-size: 16px; text-align: left;">
+                                                                Hi @Model.FirstName,@Model.LastName
+                                                            </p>
+                                                            <p style="font-family: Arial; color: #404041; font-size: 16px; text-align: left;">
+                                                                We've received a request to register on Accentrix. To activate your account, please click the activation link below.
+
+                                                                
+                                                            </p>
+                                                            <br />
+                                                            <p style="font-family: Arial; color: #404041; font-size: 16px; text-align: left;">- Accentrix Team</p>
+
+                                                        </td>
+
+
+                                                    </tr>
+                                                    <tr><td style="height: 10px;"></td></tr>
+                                                    <tr>
+                                                        <td align="center" bgcolor="#ffffff">
+                                                            <table width="25%" border="0" cellspacing="0" cellpadding="0">
+                                                                <tbody>
+                                                                    <tr>
+                                                                        <td style="  line-height: 20px; display: block; width: 150px; background-color: #ffffff; vertical-align: middle" align="center">
+                                                                            <a style=" line-height:30px; display:block; text-decoration:none; color:#fff; padding:10px; background-color:#4c9ed9"
+                                                                               @*href="@WebConfigurationHelper.GetAppSettingValue("SiteUrl")/Account/Login?Id=@Model.IndividualRecordId">Click Here to activate</a>*@
+
+                                                                                 href="@WebConfigurationHelper.GetAppSettingValue("SiteUrl")/Account/ConfirmActivateUser?Id=@CommonFunction.EncryptPassword(Model.IndividualRecordId.ToString())">Click Here</a>
+                                                                            
+                                                                        </td>
+                                                                    </tr>
+                                                            </table>
+                                                        </td>
+                                                    </tr>
+                                                    <tr><td style="height: 10px;"></td></tr>
+
+                                                </tbody>
+                                            </table>
+
+                                        </td>
+                                    </tr>
+
+
+                                    @*<tr>
+                                            <td>
+                                                <table width="100%" border="0" cellspacing="0" cellpadding="0">
+                                                    <tbody>
+                                                        <tr>
+                                                            <td width="20" bgcolor="#6c6c6c" style="width: 20px; background-color: #6c6c6c;">&nbsp;</td>
+
+                                                            <td bgcolor="#6c6c6c" width="255" style="background-color: #6c6c6c; width: 255px;" height="50" valign="middle">
+                                                                <img style="vertical-align:bottom; display:block;" src="@WebConfigurationHelper.GetAppSettingValue("SiteUrl")/Content/EmailTemplate/Images/logo-footer.png" alt="" />
+                                                            </td>
+                                                            <td width="8" bgcolor="#ffffff" style="width: 8px; background-color: #ffffff;">&nbsp;</td>
+                                                            <td style="font-family: Arial; font-size: 11px; color: #fff; text-align: center; line-height: 18px; background-color: #6c6c6c;">
+
+                                                                <table width="100%" border="0" cellspacing="0" cellpadding="0">
+                                                                    <tr>
+                                                                        <td align="center"><span style="display: block; margin: 0 0 5px 0; line-height: 18px; font-family: Arial; font-size: 11px; color: #fff;">BE SOCIAL WITH POOLOGICS!</span></td>
+                                                                    </tr>
+
+                                                                    <tr>
+
+                                                                        <td align="center"></td>
+                                                                    </tr>
+                                                                </table>
+
+
+
+
+                                                            </td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </td>
+                                        </tr>*@
+
+                                </tbody>
+                            </table>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
+
+Confirm email:
+
+@{
+    ViewBag.Title = "Account Activated!";
+}
+
+<h2>@ViewBag.Title.</h2>
+<div>
+    <p>
+        Thank you for confirming your email. Please  @Html.ActionLink("Click here to Log in", "Login", "Account", routeValues: null, htmlAttributes: new { id = "loginLink" })
+    </p>
+</div>

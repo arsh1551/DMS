@@ -1,0 +1,730 @@
+//Controller
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Web;
+using System.Web.Mvc;
+using ServiceLayer.Interfaces;
+using CoreEntites.ViewModel;
+using ServiceLayer.Services;
+//using ServiceLayer.Interfaces;
+
+namespace DMS.Areas.SuperAdmin.Controllers
+{
+    public class FirmsController : Controller
+    {
+        // GET: SuperAdmin/Firms
+        //public ActionResult Index()
+        //{
+        //    return View();
+        //}
+
+        IFirmsServices _FirmService = null;
+        public FirmsController(IFirmsServices FirmService)
+        {
+
+            _FirmService = FirmService;
+        }
+
+        // GET: FirmArea/Firm
+        public ActionResult Dashboard()
+        {
+            return View();
+        }
+
+
+        public ActionResult GetFirm(long? FirmId)
+        {
+
+            FirmsViewModel objmodal = new FirmsViewModel();
+            if (FirmId != null)
+            {
+                TempData["FirmId"] = FirmId.Value;
+                //objmodal = _ClientService.GetClient(ClientId.Value);
+
+            }
+            return Json(new { result = "Redirect", url = Url.Action("AddFirm", "Firms", new { Area = "SuperAdmin" }), objmodal });
+
+            // return RedirectToAction("AddClient", objmodal); //View("/Areas/FirmArea/Firm/AddClient.cshtml", objmodal);
+        }
+        public ActionResult AddFirm(FirmsViewModel objmodel)
+        {
+            if (TempData["FirmId"] != null)
+            {
+                // objmodel = _ClientService.GetClient(Convert.ToInt64(TempData["clientid"]));
+                //objmodel.ClientId = Convert.ToInt64(TempData["clientid"]);
+                objmodel = _FirmService.GetFirm(Convert.ToInt64(TempData["FirmId"]));
+                objmodel.FirmId = Convert.ToInt64(TempData["FirmId"]);
+                //return View(objmodel);
+                //return View("EditFirm", objmodel);
+            }
+            ViewBag.Success = TempData["resultMessage"];
+            //else{
+            //    return View(objmodel);
+            //}
+            return View(objmodel);
+        }
+
+
+        [HttpGet]
+        public JsonResult GetFirms(string sidx, string sord, int page, int rows, bool _search, string searchField, string searchOper, string searchString)
+        {
+            var res = _FirmService.GetFirmsList();
+            //   var res = _adminService.GetMasterPackageList();
+
+            sord = (sord == null) ? "" : sord;
+            int pageIndex = Convert.ToInt32(page) - 1;
+            int pageSize = rows;
+
+            var PackageList = res.Select(
+                    t => new
+                    {
+                        t.FirmId,
+                        t.FirmName,
+                        t.FirmEmail
+                    });
+
+            //if (_search)
+            //{
+            //    switch (searchField)
+            //    {
+            //        case "PackageName":
+            //            PackageList = PackageList.Where(t => t.PackageName.Contains(searchString));
+            //            break;
+            //        case "MonthlyRate":
+            //            PackageList = PackageList.Where(t => t.MonthlyRate.ToString().Contains(searchString));
+            //            break;
+            //        case "YearlyRate":
+            //            PackageList = PackageList.Where(t => t.YearlyRate.ToString().Contains(searchString));
+            //            break;
+            //        case "SetUpFee":
+            //            PackageList = PackageList.Where(t => t.SetUpFee.ToString().Contains(searchString));
+            //            break;
+            //    }
+            //}
+
+
+            int totalRecords = PackageList.Count();
+            var totalPages = (int)Math.Ceiling((float)totalRecords / (float)rows);
+            if (sord.ToUpper() == "DESC")
+            {
+                PackageList = PackageList.OrderByDescending(t => t.FirmId);
+                PackageList = PackageList.Skip(pageIndex * pageSize).Take(pageSize);
+            }
+            else
+            {
+                PackageList = PackageList.OrderBy(t => t.FirmId);
+                PackageList = PackageList.Skip(pageIndex * pageSize).Take(pageSize);
+            }
+            var jsonData = new
+            {
+                total = totalPages,
+                page,
+                records = totalRecords,
+                rows = PackageList
+            };
+
+            return Json(jsonData, JsonRequestBehavior.AllowGet);
+
+
+        }
+
+
+
+        [HttpPost]
+        public ActionResult SaveFirm(FirmsViewModel model)
+        {
+            if (model.FirmId != 0)
+            {
+                RemoveValidation();
+            }
+
+            if (ModelState.IsValid)
+            {
+                try
+                {
+                    if (model.FirmId != 0)
+                    {
+
+                        // model.ModifiedDate = DateTime.Now;
+                        try
+                        {
+
+
+                            bool _result = _FirmService.UpdateFirm(model);
+                            if (_result == true)
+                                TempData["resultMessage"] = "Firm Information Updated Successfully";
+                            return RedirectToAction("Dashboard");
+                        }
+                        catch (Exception ex)
+                        {
+                            throw;
+                        }
+
+                    }
+                    else
+                    {
+                        //model.CreatedDate = DateTime.Now;
+                        try
+                        {
+                            bool _result = _FirmService.AddFirm(model);
+                            if (_result == true)
+                                TempData["resultMessage"] = "Firm Added Successfully";
+                            return RedirectToAction("Dashboard");
+                        }
+                        catch (Exception ex)
+                        {
+                            throw;
+                        }
+
+                    }
+
+                    return View("AddFirm");
+
+                }
+                catch (Exception ex)
+                {
+
+                    return View("AddFirm");
+
+                }
+
+            }
+            return View("AddFirm");
+        }
+
+        private void RemoveValidation()
+        {
+            List<string> keys = new List<string>();
+            foreach (var modelkey in ModelState.Keys)
+            {
+                if (modelkey.ToLower().Contains("username") || modelkey.ToLower().Contains("password"))
+                {
+                    keys.Add(modelkey);
+                }
+                if (keys.Count == 2)
+                {
+                    break;
+                }
+            }
+            foreach (var key in keys)
+            {
+                ModelState.Remove(key);
+            }
+        }
+
+        [HttpPost]
+        public ActionResult DeleteFirm(int Id)
+        {
+            var record = _FirmService.GetFirm(Id);
+            if (record != null)
+            {
+                var result = _FirmService.DeleteFirm(Id);
+                TempData["resultMessage"] = "Firm Deleted Successfully";
+                var res = new
+                {
+                    success = true,
+
+                };
+
+                return Json(res, JsonRequestBehavior.AllowGet);
+
+            }
+            else
+            {
+
+                var res = new
+                {
+                    success = false
+                };
+                return Json(res, JsonRequestBehavior.AllowGet);
+
+            }
+
+
+
+        }
+
+        public ActionResult AddFirmAdmin(FirmsViewModel model)
+        {
+
+            _FirmService.AddFirm(model);
+            return View("Dashboard");
+        }
+        public ActionResult IsFirmEmailExists(string FirmEmail)
+        {
+            bool _result = _FirmService.IsFirmEmailExists(FirmEmail);
+            return Json(_result, JsonRequestBehavior.AllowGet);
+        }
+        /// <summary>
+        /// CreatedDate:22-Nov-2017
+        /// Desc:To check UserName exists or not
+        /// </summary>
+        /// <param name="UserName"></param>
+        /// <returns></returns>
+        public ActionResult IsUserExists(string UserName)
+        {
+            bool _result = _FirmService.IsUserExists(UserName);
+            return Json(_result, JsonRequestBehavior.AllowGet);
+        }
+        public ActionResult IsFirmExists(string FirmName)
+        {
+            bool _result = _FirmService.IsFirmExists(FirmName);
+            return Json(_result, JsonRequestBehavior.AllowGet);
+        }
+
+    }
+}
+
+**********************************
+AddFirm.Js
+
+
+$(document).ready(function () {
+    //$('#BirthDate').datepicker({
+    //    dateFormat: "dd/MM/yyyy"
+    //});
+  
+    $('#dvAlertSuccess').hide();
+});
+
+var FirmAdminUser = {
+    Id: $("#FirmId").val(),
+    Name: $("#FirmName").val(),
+    Email: $("#FirmEmail").val(),
+    //createdDate:
+    //modifiedDate:
+    userName: $("#UserName").val(),
+    password: $("#Password").val()
+         
+};
+
+$("#btnUpdate").click(function () {
+    $.ajax({
+        type: "POST",
+        url: "/SuperAdmin/Firms/AddFirmAdmin",
+        data: FirmAdminUser,
+        contentType: "application/json; charset=utf-8",
+        dataType: "json",
+        success: function (response) {
+            alert($("#FirmName").val()+" Added Successfully " );
+        },
+        failure: function (response) {
+            alert("Failed to add Firm");
+        },
+        error: function (response) {
+            alert("Error in adding Firm");
+        }
+    });
+});
+$('#FirmEmail').on('blur', function (e) {
+    $.ajax({
+        type: "POST",
+        url: "IsFirmEmailExists",
+        contentType: "application/json",
+        dataType: "json",
+        data: JSON.stringify({ EmailAddress: $("#FirmEmail").val() }),
+        success: function (response) {
+            if (response == true) {
+                $('#dvAlertDanger').css("display", "block");
+                $('#lblAlertDanger').text("Email Already Exists");
+                $('#dvAlertSuccess').hide();
+                $('#btnUpdate').prop("disabled", true);
+            }
+            else {
+                $('#dvAlertDanger').css("display", "none");
+                $('#lblAlertDanger').text(" ");
+                $('#btnUpdate').prop("disabled", false);
+            }
+        },
+        error: function (response) {
+            console.log(response);
+        }
+    });
+});
+debugger;
+$('#UserName').on('blur', function (e) {
+    $.ajax({
+        type: "POST",
+        url: "@Url.Action("IsUserExists", "Firms", new { area = "SuperAdmin" })",
+        contentType: "application/json",
+        dataType: "json",
+        data: JSON.stringify({ UserName: $("#UserName").val() }),
+        success: function (response) {
+            if (response == true) {
+                $('#dvAlertDanger').css("display", "block");
+                $('#lblAlertDanger').text("UserName Already Exists");
+                $('#btnUpdate').prop("disabled", true);
+            }
+            else {
+                $('#dvAlertDanger').css("display", "none");
+                $('#lblAlertDanger').text(" ");
+                $('#btnUpdate').prop("disabled", false);
+            }
+        },
+        error: function (response) {
+            console.log(response);
+        }
+    });
+});
+
+
+
+
+//function UpdateSuccess(e) {
+//    $('#dvSuccess').show();
+//    $('#Modal-Header').text("");
+//    $('#lblSuccess').text('Individiual Client Updated Successfully.');
+//    //$('#dvClientDetail').load('GetIndividualClientDetail');
+//    //$('#ModalClose').click();
+//}
+
+********************
+Dashboard
+$(document).ready(function myfunction() {
+    BindPackageGrid();
+});
+
+
+function Actionbtn(cellvalue, options, rowObject) {
+    var id = rowObject.FirmId;
+    // var refNo = rowObject.Reference;
+    var html = '';
+    html = "<a  id='" + id + "'  class='memberAction' name='" + id + "' title='Edit'  onClick='EditRecord(" + id + ")'  ><i style='font-size:14px' class='fa fa-pencil-square-o'></i></a>";
+    html += "&nbsp;&nbsp;";
+    html += "<a  id='" + id + "'  class='memberAction' name='" + id + "' title='delete'  onClick='DeleteRecord(" + id + ")'><i style='font-size:14px' class='fa fa-trash-o' ></i></a>";
+
+
+    return html;
+}
+debugger;
+function EditRecord(Id) {
+    debugger; 
+
+    $.post("/SuperAdmin/Firms/GetFirm/", { FirmId: Id }, function (response) {
+        if (response.result == 'InvalidLogin') {
+            //show invalid login
+        }
+        else if (response.result == 'Error') {
+            //show error
+        }
+        else if (response.result == 'Redirect') {
+            //redirecting to main page from here for the time being.
+            window.location = response.url;
+        }
+    });
+   
+}
+
+
+debugger;
+function DeleteRecord(Id) {
+    bootbox.confirm({
+        size: "small",
+        message: "Are you sure you want to delete?",
+        callback: function (result) {
+            if (result) {
+                $.ajax({
+                    type: 'Post',
+                    cache: 'false',
+                    url: $_DeleteFirm,
+                    data: { Id: Id },
+                    success: function (response) {
+                        if (response) {
+                            $("#jqlist").trigger("reloadGrid");
+                        }
+                    },
+                    error: function () {
+                    }
+                });
+            }
+        }
+    })
+}
+
+function BindPackageGrid() {
+    debugger;
+    $("#jqlist").jqGrid({
+
+        url: "/SuperAdmin/Firms/GetFirms/",
+        datatype: 'json',
+        mtype: 'Get',
+        colNames: ['FirmId', 'Name', 'Email',''],
+        colModel: [
+            { key: true, hidden: true, name: 'FirmId', index: 'AccountingFirmId', editable: true },
+            { key: false, name: 'FirmName', index: 'FirmName', editable: true, sortable: true, align: 'center' },
+            { key: false, name: 'FirmEmail', index: 'FirmEmail', editable: true, sortable: true, align: 'center' },
+            //{ key: false, name: 'SSN', index: 'SSN', editable: true, sortable: true, align: 'center' },
+            //{ key: false, name: 'EmailAddress', index: 'EmailAddress', editable: true, align: 'center' },
+            //{ key: false, name: 'PhoneNumber', index: 'PhoneNumber', editable: true, align: 'center' },
+            //// { key: false, name: 'YearlyRate', index: 'YearlyRate', editable: true, edittype: 'select', editoptions: { value: { 'M': 'Male', 'F': 'Female', 'N': 'None' } } },
+            ////{ key: false, name: 'SetUpFee', index: 'ClassName', editable: true, edittype: 'select', editoptions: { value: { '1': '1st Class', '2': '2nd Class', '3': '3rd Class', '4': '4th Class', '5': '5th Class' } } },
+            ////   { key: false, name: 'CreatedDate', align: 'center', index: 'CreatedDate', editable: true, formatter: 'date', formatoptions: { newformat: 'd/m/Y' } },
+
+            { name: '', index: '', sortable: false, formatter: Actionbtn, align: "center" },
+
+        ],
+        pager: jQuery('#jqControls'),
+        rowNum: 10,
+        rowList: [10, 20, 30, 40, 50],
+        height: '100%',
+        viewrecords: true,
+        caption: '<h2>Firms List</h2>',
+        emptyrecords: 'No Plans Records are Available to Display',
+        jsonReader: {
+            root: "rows",
+            page: "page",
+            total: 2,
+            records: "records",
+            repeatitems: false,
+            Id: "0"
+        },
+        autowidth: true,
+        multiselect: false,
+        sortable: true,
+        sortname: 'FirstName',
+        sortorder: "desc",
+        //forceClientSorting: true,
+        //loadonce: true
+    }).navGrid('#jqControls', { edit: true, add: true, del: true, search: true, refresh: true },
+        {
+            zIndex: 100,
+            caption: "Search Firms",
+            sopt: ['cn']
+        }
+
+        );
+
+    //{
+    //    zIndex: 100,
+    //    url: '/Student/Edit',
+    //    closeOnEscape: true,
+    //    closeAfterEdit: true,
+    //    recreateForm: true,
+    //    afterComplete: function (response) {
+    //        if (response.responseText) {
+    //            alert(response.responseText);
+    //        }
+    //    }
+    //},
+    //{
+    //    zIndex: 100,
+    //    url: "/Student/Create",
+    //    closeOnEscape: true,
+    //    closeAfterAdd: true,
+    //    afterComplete: function (response) {
+    //        if (response.responseText) {
+    //            alert(response.responseText);
+    //        }
+    //    }
+    //},
+    //{
+    //    zIndex: 100,
+    //    url: "/Student/Delete",
+    //    closeOnEscape: true,
+    //    closeAfterDelete: true,
+    //    recreateForm: true,
+    //    msg: "Are you sure you want to delete Student... ? ",
+    //    afterComplete: function (response) {
+    //        if (response.responseText) {
+    //            alert(response.responseText);
+    //        }
+    //    }
+    //});
+
+    //$(".memberAction").click(function () {
+
+    //    var pkgId = $(this).attr("id");
+    //    //var ref = $(this).attr("name");
+    //    alert("PackageId:" + pkgId);
+    //    //do remove ajax call with mopId
+    //});
+
+
+}
+*******
+addfirm
+@*@*@*@model CoreEntites.ViewModel.FirmsViewModel
+@{
+    Layout = "~/Areas/SuperAdmin/Views/Shared/_SuperAdminLayout.cshtml";
+}
+
+                            @*@{
+                            var firmName=model.FirmName;
+                            }*@
+<script src="~/Scripts/jquery.unobtrusive-ajax.js"></script>
+<main class="col-sm-9 ml-sm-auto col-md-10 pt-3">
+    <div class="main_section" id="dvPartial">
+        @if (ViewBag.Success != null)
+        {
+            <div class="alert alert-success" id="dvAlertSuccess">
+                <label id="lblAlertSuccess">@ViewBag.Success</label>
+            </div>
+        }        
+        @using (Html.BeginForm("SaveFirm", "Firms", FormMethod.Post, new { @class = "", @id = "FirmForm" }))
+        {
+            @Html.AntiForgeryToken()
+
+            <div class="">
+                @Html.ValidationSummary(true, "", new { @class = "text-danger" })
+                <div class="alert alert-danger" id="dvAlertDanger" style="display:none;">
+                    <label id="lblAlertDanger"></label>
+                </div>
+                <div class="form-group" style="display:none">
+                    <div class="col-md-10">
+                        @*  <input type="hidden" id="IndividualRecordId" value="IndividualRecordId" name="IndividualRecordId" />*@
+                        @Html.HiddenFor(model => model.FirmId)
+                    </div>
+                </div>
+                <h2>Register Firm</h2>
+                <br />
+
+                <div class="row">
+                    <div class="col-12">
+                        <div class="form-group">
+                            <label for="Firm"> Name</label>
+                            @Html.ValidationMessageFor(model => model.FirmName, "", new { @class = "text-danger" })
+
+                            @Html.EditorFor(model => model.FirmName, new { htmlAttributes = new { @class = "form-control", @placeholder = "Enter Firm Name", @id = "model.FirmName", @maxlength = "100" } })
+                        </div>
+                    </div>
+
+                </div>
+                <div class="row">
+                    <div class="col-12">
+                        <div class="form-group">
+                            <label for="Email">Email</label>
+                            @Html.ValidationMessageFor(model => model.FirmEmail, "", new { @class = "text-danger" })
+                            @Html.EditorFor(model => model.FirmEmail, new { htmlAttributes = new { @class = "form-control", @placeholder = "Enter Email of Firm", @maxlength = "100" } })
+                        </div>
+                    </div>
+
+                </div>
+                
+              
+                @if (Model.FirmId <= 0)
+                {
+
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="form-group">
+                                <label for="Username">UserName</label>
+                                @Html.ValidationMessageFor(model => model.UserName, "", new { @class = "text-danger" })
+                                @Html.EditorFor(model => model.UserName, new { htmlAttributes = new { @class = "form-control", @placeholder = "Enter username for FirmAdmin", @maxlength = "50" } })
+                            </div>
+                        </div>
+
+                    </div>
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="form-group">
+                                <label for="Password">Password</label>
+
+                               @Html.ValidationMessageFor(model => model.Password, "", new { @class = "text-danger" })
+                            @Html.EditorFor(model => model.Password, new { htmlAttributes = new { @class = "form-control", @placeholder = "Password", @maxlength = "50" } })
+                                @*@Html.ValidationMessageFor(model => model.Password, "", new { @class = "invalid-feedback" })
+                                @Html.PasswordFor(model => model.Password, new { @class = "form-control", @placeholder = "Password" })*@
+
+                            </div>
+                        </div>
+
+                    </div>
+                     <input type="submit" id="btnUpdate" name="UpdateProfile" value="Add" class="btn btn-primary" />
+                }
+                else
+                {
+                <input type="submit" id="btnUpdate" name="UpdateProfile" value="Update" class="btn btn-primary" />
+                <a href="@Url.Action("Dashboard", "Firms", new { area = "SuperAdmin" })" class="btn btn-secondary">Cancel</a>
+                }
+
+            </div>
+        }
+</div>
+</main>
+       
+@Scripts.Render("~/bundles/jqueryval")
+    
+<script>
+
+
+    //$('#BirthDate').datepicker({
+    //    dateFormat: "dd/MM/yyyy"
+    //});
+</script>
+<script src="~/Areas/SuperAdmin/Scripts/AddFirm.js"></script>
+
+************
+Dash
+
+
+
+@using CoreEntites.SessionManagement;
+@{
+    Layout = "~/Areas/SuperAdmin/Views/Shared/_SuperAdminLayout.cshtml";
+
+}
+
+@if (ViewBag.Success != null)
+{
+    <div class="alert alert-success" id="dvAlertSuccess">
+        <label id="lblAlertSuccess">@ViewBag.Success</label>
+    </div>
+}
+else
+{
+}
+
+
+
+<main class="col-sm-9 ml-sm-auto col-md-10 pt-3">
+    <div class="main_section" id="dvPartial">
+        <h1 class="clearfix">
+            Firms
+            @*<a href="@Url.Action("GetFirms", "Firms", new { area = "SuperAdmin" })" class="btn btn-secondary btn-sm float-right">Show Firms</a>*@
+            <a href="@Url.Action("AddFirm","Firms",new { area="SuperAdmin"})" class="btn btn-secondary btn-sm float-right">Add Firm</a>
+            @*<a href="@Url.Action("DeleteFirm","Firms",new { area="SuperAdmin"})" class="btn btn-secondary btn-sm float-right">Delete Firm</a>
+            <a href="@Url.Action("GetFirm","Firms",new { area="SuperAdmin"})" class="btn btn-secondary btn-sm float-right">Get Firm</a>*@
+           
+        </h1>
+        <div class="row">
+            <div class="col-sm-12">
+                <table id="jqlist" class="table table-striped supplier-table"></table>
+                <div id="jqControls"></div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<script src="~/Areas/SuperAdmin/Scripts/DashBoardList.js"></script>
+
+***************
+using System.Web.Mvc;
+
+namespace DMS.Areas.SuperAdmin
+{
+    public class SuperAdminAreaRegistration : AreaRegistration 
+    {
+        public override string AreaName 
+        {
+            get 
+            {
+                return "SuperAdmin";
+            }
+        }
+
+        public override void RegisterArea(AreaRegistrationContext context) 
+        {
+            context.MapRoute(
+                "SuperAdmin_default",
+                "SuperAdmin/{controller}/{action}/{id}",
+                new { action = "Dashboard", Controller = "Firms", id = UrlParameter.Optional },
+                 namespaces: new string[] { "DMS.Areas.SuperAdmin.Controllers" }
+            );
+        }
+    }
+}
+
+
+
+
